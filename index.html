@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MHSMS - লাইভ ভয়েস ও ভিডিও কলিং</title>
+    <title>MHSMS - লাইভ ভয়েস ও ভিডিও কলিং</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -48,37 +48,41 @@
 
         .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png'); }
         .message-wrapper { display: flex; flex-direction: column; width: 100%; position: relative; margin-bottom: 5px; }
-        .message-container { display: flex; align-items: center; width: 100%; position: relative; transition: transform 0.2s ease; cursor: grab; user-select: none; }
+        .message-container { display: flex; align-items: center; width: 100%; position: relative; transition: transform 0.2s ease; user-select: none; }
         .message { padding: 12px 16px; border-radius: 20px; max-width: 65%; word-wrap: break-word; font-size: 0.95rem; position: relative; }
         .message.incoming { background: #f1f3f5; align-self: flex-start !important; border-bottom-left-radius: 5px; color: #333; }
         .message.outgoing { background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%); color: white; align-self: flex-end !important; border-bottom-right-radius: 5px; }
+        .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .message audio { max-width: 100%; margin-top: 5px; display: block; }
         .msg-time { font-size: 0.7rem; color: #a1a1a1; margin-top: 4px; display: block; }
 
-        .reply-preview-bar { background: #ffe5ec; padding: 8px 15px; border-top: 1px solid #ffccd5; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #ff4d6d; }
-        .close-reply-btn { cursor: pointer; font-weight: bold; color: #ff6b6b; }
-
-        .input-area { display: flex; padding: 15px; border-top: 1px solid #ffe5ec; background: #fff0f3; }
-        .input-area input { flex: 1; padding: 14px 20px; border: 1px solid #ffccd5; border-radius: 30px; outline: none; font-size: 0.95rem; }
-        .input-area button { background: linear-gradient(45deg, #ff758c, #ff7eb3); color: white; border: none; padding: 0 25px; margin-left: 10px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        .input-area { display: flex; padding: 15px; border-top: 1px solid #ffe5ec; background: #fff0f3; align-items: center; gap: 8px; }
+        .input-area input { flex: 1; padding: 14px 20px; border: 1px solid #ffccd5; border-radius: 30px; outline: none; font-size: 0.95rem; background: white; }
+        
+        .media-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; transition: 0.2s; padding: 5px; display: flex; align-items: center; justify-content: center; }
+        .media-btn:hover { transform: scale(1.1); }
+        .rec-active { color: red; animation: voicePulse 1s infinite; }
+        
+        @keyframes voicePulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        
+        .send-btn { background: linear-gradient(45deg, #ff758c, #ff7eb3); color: white; border: none; padding: 14px 25px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 0.95rem; }
         
         /* 📞 রিয়েল-টাইম কলিং স্ক্রিন ওভারলে */
         .call-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; color: white; text-align: center; }
         .call-avatar { width: 120px; height: 120px; background: #ff758c; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 3rem; margin-bottom: 20px; box-shadow: 0 0 25px #ff758c; animation: pulse 1.5s infinite; }
         .call-status { font-size: 1.2rem; color: #ffccd5; margin-bottom: 30px; font-weight: bold; }
         
-        .call-buttons { display: flex; gap: 20px; }
+        .call-buttons { display: flex; gap: 20px; z-index: 2100; }
         .btn-call { border: none; padding: 12px 35px; border-radius: 30px; font-size: 1rem; font-weight: bold; cursor: pointer; color: white; }
         .btn-accept { background: #28a745; box-shadow: 0 4px 10px rgba(40,167,69,0.4); }
         .btn-decline { background: #dc3545; box-shadow: 0 4px 10px rgba(220,53,69,0.4); }
 
         /* ভিডিও স্ট্রিম উইন্ডো */
-        .video-container { display: flex; gap: 10px; margin-top: 20px; width: 90%; max-width: 600px; justify-content: center; }
-        video { width: 45%; max-height: 250px; background: #222; border-radius: 10px; transform: scaleX(-1); border: 2px solid #ff758c; }
+        .video-container { display: flex; gap: 15px; margin-top: 20px; width: 90%; max-width: 700px; justify-content: center; position: relative; }
+        video { width: 48%; height: auto; max-height: 300px; background: #222; border-radius: 15px; border: 2px solid #ff758c; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #localVideo { transform: scaleX(-1); } /* সেলফ মিররিং */
 
         @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(255, 117, 140, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0); } }
-        .context-menu { position: absolute; background: white; border: 1px solid #ffccd5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; display: none; list-style: none; }
-        .context-menu li { padding: 10px 20px; cursor: pointer; font-size: 0.9rem; color: #333; }
-        .context-menu li:hover { background: #ffe5ec; color: #ff4d6d; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -87,7 +91,7 @@
 <div id="authScreen" class="auth-container">
     <h2>MHSMS সাইন-ইন 🌸</h2>
     <input type="text" id="usernameInput" placeholder="ইউজারনেম (ছোট হাতের ইংরেজি)">
-    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
+    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
     <button id="authBtn" onclick="handleAuth()">লগইন / রেজিস্টার</button>
 </div>
 
@@ -111,13 +115,15 @@
             </div>
         </div>
         <div class="message-area" id="messageArea"></div>
-        <div id="replyPreviewBar" class="reply-preview-bar hidden">
-            <span>Replying to: <i id="replyPreviewText">...</i></span>
-            <div class="close-reply-btn" onclick="cancelReply()">✕</div>
-        </div>
+        
         <div class="input-area">
+            <button class="media-btn" onclick="document.getElementById('imageFileInput').click()">🖼️</button>
+            <input type="file" id="imageFileInput" accept="image/*" class="hidden" onchange="sendImageFile(this)">
+            
+            <button class="media-btn" id="voiceRecordBtn" onclick="toggleVoiceRecording()">🎙️</button>
+            
             <input type="text" id="messageInput" placeholder="মেসেজ লিখুন..." autocomplete="off">
-            <button id="sendBtn" onclick="sendMessage()">পাঠান</button>
+            <button id="sendBtn" class="send-btn" onclick="sendMessage()">পাঠান</button>
         </div>
     </div>
 </div>
@@ -127,21 +133,18 @@
     <h2 id="callUserName">User</h2>
     <div class="call-status" id="callTypeStatus">Calling...</div>
     
-    <div class="call-buttons">
-        <button id="btnAcceptCall" class="btn-call btn-accept hidden" onclick="answerCall()">Receive</button>
-        <button class="btn-call btn-decline" onclick="hangUpCall()">End Call</button>
-    </div>
+    <audio id="remoteAudio" autoplay></audio>
 
     <div id="videoStreams" class="video-container hidden">
         <video id="localVideo" autoplay playsinline muted></video>
         <video id="remoteVideo" autoplay playsinline></video>
     </div>
-</div>
 
-<ul id="contextMenu" class="context-menu">
-    <li onclick="triggerEditMessage()">✏️ এডিট করুন</li>
-    <li onclick="triggerDeleteMessage()">🗑️ ডিলিট করুন</li>
-</ul>
+    <div class="call-buttons">
+        <button id="btnAcceptCall" class="btn-call btn-accept hidden" onclick="answerCall()">Receive</button>
+        <button class="btn-call btn-decline" onclick="hangUpCall()">End Call</button>
+    </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -162,15 +165,14 @@
     let currentUser = null;
     let activeChatFriend = null;
     let unsubscribeChat = null;
-    let unsubscribeCalls = null;
     
-    // WebRTC ভ্যারিয়েবলস
+    // WebRTC ও মিডিয়া ভ্যারিয়েবলস
     let localStream = null;
-    let remoteStream = null;
     let peerConnection = null;
     let currentCallId = null;
+    let mediaRecorder = null;
+    let voiceChunks = [];
 
-    // Google Free STUN Servers
     const rtcConfig = {
         iceServers: [
             { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
@@ -180,7 +182,7 @@
     async function handleAuth() {
         const username = document.getElementById('usernameInput').value.trim().toLowerCase();
         const password = document.getElementById('passwordInput').value.trim();
-        if(!username || password.length < 6) { alert("সঠিক ইউজারনেম ও পাসওয়ার্ড দিন।"); return; }
+        if(!username || password.length < 6) { alert("সঠিক ইউজারনেম ও পাসওয়ার্ড দিন।"); return; }
         try {
             const userRef = db.collection("users").doc(username);
             const doc = await userRef.get();
@@ -188,7 +190,7 @@
             else if (!doc.exists) {
                 await userRef.set({ username, password, friends: [] });
                 loginSuccess(username);
-            } else { alert("ভুল পাসওয়ার্ড!"); }
+            } else { alert("ভুল পাসওয়ার্ড!"); }
         } catch (e) { alert("এরর: " + e.message); }
     }
 
@@ -198,7 +200,6 @@
         document.getElementById('appScreen').classList.remove('hidden');
         loadFriends();
         listenForIncomingCalls();
-        document.addEventListener('click', () => document.getElementById('contextMenu').style.display = 'none');
     }
 
     async function clearChatFromList(friendName, event) {
@@ -211,13 +212,13 @@
                 const batch = db.batch();
                 snapshot.forEach(doc => batch.delete(doc.ref));
                 await batch.commit();
-                alert("চ্যাট হিস্ট্রি ডিলিট করা হয়েছে!");
+                alert("চ্যাট হিস্ট্রি ডিলিট করা হয়েছে!");
                 if(activeChatFriend === friendName) {
                     document.getElementById('messageArea').innerHTML = '';
                     document.getElementById('chatActions').classList.add('hidden');
                     document.getElementById('currentChatUser').innerText = "কোনো বন্ধু সিলেক্ট করুন";
                 }
-            } catch (e) { alert("মুছে ফেলা সম্ভব হয়নি: " + e.message); }
+            } catch (e) { alert("মুছে ফেলা সম্ভব হয়নি: " + e.message); }
         }
     }
 
@@ -245,37 +246,46 @@
         });
     }
 
-    // 📞 WebRTC + Firebase লাইভ কল ও কথা বলার সিস্টেম
+    // 📞 WebRTC লাইভ কলিং সিস্টেম (ফিক্সড অডিও ও ভিডিও ট্র‍্যাক)
     async function makeCall(type) {
         if(!activeChatFriend) return;
         currentCallId = currentUser + "_" + Date.now();
         
         try {
+            // অডিও এবং ভিডিও স্ট্রিম একসাথে নেওয়া
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'Video' });
-            document.getElementById('videoStreams').classList.remove('hidden');
-            document.getElementById('localVideo').srcObject = localStream;
-        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন পারমিশন দিন!"); return; }
+            
+            if (type === 'Video') {
+                document.getElementById('videoStreams').classList.remove('hidden');
+                document.getElementById('localVideo').srcObject = localStream;
+            }
+        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন পারমিশন দিন বা ডিভাইস চেক করুন!"); return; }
 
         showCallOverlay(activeChatFriend, `${type} Call - Ringing...`, false);
         
-        // WebRTC Connection তৈরি
         peerConnection = new RTCPeerConnection(rtcConfig);
+        
+        // সমস্ত লোকাল ট্র‍্যাক সংযোগে যুক্ত করা
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-        remoteStream = new MediaStream();
-        document.getElementById('remoteVideo').srcObject = remoteStream;
+        // অপরপক্ষের ট্র‍্যাক রিসিভ করা ও হ্যান্ডেল করা
         peerConnection.ontrack = event => {
-            event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+            const streams = event.streams[0];
+            if (type === 'Video') {
+                document.getElementById('videoStreams').classList.remove('hidden');
+                document.getElementById('remoteVideo').srcObject = streams;
+            } else {
+                document.getElementById('remoteAudio').srcObject = streams;
+            }
         };
 
-        // ICE Candidate জেনারেট করা
         const callDoc = db.collection("calls").doc(currentCallId);
         const callerCandidatesCollection = callDoc.collection("callerCandidates");
+        
         peerConnection.onicecandidate = event => {
             if(event.candidate) callerCandidatesCollection.add(event.candidate.toJSON());
         };
 
-        // Offer তৈরি করা (SDP)
         const offerDescription = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offerDescription);
 
@@ -287,7 +297,6 @@
             offer: { type: offerDescription.type, sdp: offerDescription.sdp }
         });
 
-        // Answer এর জন্য অপেক্ষা করা
         callDoc.onSnapshot(snapshot => {
             const data = snapshot.data();
             if (data && data.answer && !peerConnection.currentRemoteDescription) {
@@ -296,12 +305,10 @@
             }
         });
 
-        // রিসিভারের ICE Candidates অ্যাড করা
         callDoc.collection("receiverCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
-                    const candidate = new RTCIiceCandidate(change.doc.data());
-                    peerConnection.addIceCandidate(candidate);
+                    peerConnection.addIceCandidate(new RTCIiceCandidate(change.doc.data())).catch(e => {});
                 }
             });
         });
@@ -315,7 +322,7 @@
             .where("status", "==", "ringing")
             .onSnapshot(snapshot => {
                 snapshot.forEach(doc => {
-                    if (currentCallId) return; // অলরেডি কথা বলতে থাকলে ইগনোর করবে
+                    if (currentCallId) return; 
                     const data = doc.data();
                     currentCallId = doc.id;
                     showCallOverlay(data.caller, `Incoming ${data.type} Call...`, true);
@@ -331,9 +338,11 @@
 
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: data.type === 'Video' });
-            document.getElementById('videoStreams').classList.remove('hidden');
-            document.getElementById('localVideo').srcObject = localStream;
-        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন চালু করা যায়নি!"); return; }
+            if (data.type === 'Video') {
+                document.getElementById('videoStreams').classList.remove('hidden');
+                document.getElementById('localVideo').srcObject = localStream;
+            }
+        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন চালু করা যায়নি!"); hangUpCall(); return; }
 
         document.getElementById('callTypeStatus').innerText = "Connecting...";
         document.getElementById('btnAcceptCall').classList.add('hidden');
@@ -341,23 +350,24 @@
         peerConnection = new RTCPeerConnection(rtcConfig);
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-        remoteStream = new MediaStream();
-        document.getElementById('remoteVideo').srcObject = remoteStream;
         peerConnection.ontrack = event => {
-            event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+            const streams = event.streams[0];
+            if (data.type === 'Video') {
+                document.getElementById('videoStreams').classList.remove('hidden');
+                document.getElementById('remoteVideo').srcObject = streams;
+            } else {
+                document.getElementById('remoteAudio').srcObject = streams;
+            }
         };
 
-        // রিসিভারের ICE Candidate পাঠানো
         const receiverCandidatesCollection = callDoc.collection("receiverCandidates");
         peerConnection.onicecandidate = event => {
             if(event.candidate) receiverCandidatesCollection.add(event.candidate.toJSON());
         };
 
-        // কল অফার সেট করা
         const offerDescription = data.offer;
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
 
-        // অ্যান্সার তৈরি করা
         const answerDescription = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answerDescription);
 
@@ -366,11 +376,10 @@
             answer: { type: answerDescription.type, sdp: answerDescription.sdp }
         });
 
-        // কলারের ICE Candidates রিড করা
         callDoc.collection("callerCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
-                    peerConnection.addIceCandidate(new RTCIiceCandidate(change.doc.data()));
+                    peerConnection.addIceCandidate(new RTCIiceCandidate(change.doc.data())).catch(e => {});
                 }
             });
         });
@@ -413,13 +422,16 @@
         document.getElementById('btnAcceptCall').classList.add('hidden');
         document.getElementById('videoStreams').classList.add('hidden');
         
+        document.getElementById('remoteAudio').srcObject = null;
+        document.getElementById('remoteVideo').srcObject = null;
+        document.getElementById('localVideo').srcObject = null;
+        
         if(peerConnection) { peerConnection.close(); peerConnection = null; }
         if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-        if(remoteStream) { remoteStream.getTracks().forEach(track => track.stop()); remoteStream = null; }
         currentCallId = null;
     }
 
-    // মেসেজিং স্ক্রিপ্ট (অপরিবর্তিত)
+    // 📩 আপগ্রেডেড মেসেজিং স্ক্রিপ্ট (টেক্সট, ইমেজ এবং ভয়েস হ্যান্ডলার)
     function loadMessages() {
         if (unsubscribeChat) unsubscribeChat();
         const chatId = [currentUser, activeChatFriend].sort().join('_');
@@ -427,15 +439,25 @@
             .onSnapshot(snapshot => {
                 const area = document.getElementById('messageArea'); area.innerHTML = '';
                 snapshot.forEach(doc => {
-                    const data = doc.data(); const msgId = doc.id;
+                    const data = doc.data();
                     const wrapper = document.createElement('div'); wrapper.classList.add('message-wrapper');
                     const container = document.createElement('div'); container.classList.add('message-container');
                     const msgDiv = document.createElement('div'); msgDiv.classList.add('message', data.sender === currentUser ? 'outgoing' : 'incoming');
                     container.style.justifyContent = data.sender === currentUser ? 'flex-end' : 'flex-start';
-                    msgDiv.innerHTML = `<div>${data.text}</div>`;
+                    
+                    // মেসেজের ধরন চেক করে রেন্ডার করা
+                    if (data.type === 'image') {
+                        msgDiv.innerHTML = `<img src="${data.fileData}">`;
+                    } else if (data.type === 'audio') {
+                        msgDiv.innerHTML = `<audio src="${data.fileData}" controls></audio>`;
+                    } else {
+                        msgDiv.innerHTML = `<div>${data.text}</div>`;
+                    }
+                    
                     const timeDiv = document.createElement('span'); timeDiv.classList.add('msg-time');
                     timeDiv.innerText = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     timeDiv.style.alignSelf = data.sender === currentUser ? 'flex-end' : 'flex-start';
+                    
                     container.appendChild(msgDiv); wrapper.appendChild(container); wrapper.appendChild(timeDiv); area.appendChild(wrapper);
                 });
                 area.scrollTop = area.scrollHeight;
@@ -446,12 +468,71 @@
         const input = document.getElementById('messageInput'); const text = input.value.trim();
         if (!text || !activeChatFriend) return;
         const chatId = [currentUser, activeChatFriend].sort().join('_');
-        const msgData = { sender: currentUser, text, timestamp: new Date().getTime() };
+        const msgData = { sender: currentUser, text, timestamp: new Date().getTime(), type: 'text' };
         await db.collection("chats").doc(chatId).collection("messages").add(msgData);
         input.value = '';
     }
 
-    async function addFriend() { const f = document.getElementById('friendUsername').value.trim().toLowerCase(); if(!f || f === currentUser) return; await db.collection("users").doc(currentUser).update({ friends: firebase.firestore.FieldValue.arrayUnion(f) }); await db.collection("users").doc(f).update({ friends: firebase.firestore.FieldValue.arrayUnion(currentUser) }); alert("যুক্ত হয়েছে!"); document.getElementById('friendUsername').value = ''; }
+    // 🖼️ ছবি পাঠানোর ফাংশন (Base64 কনভার্সন)
+    function sendImageFile(input) {
+        if (!input.files || !input.files[0] || !activeChatFriend) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const chatId = [currentUser, activeChatFriend].sort().join('_');
+            const msgData = {
+                sender: currentUser,
+                type: 'image',
+                fileData: e.target.result,
+                timestamp: new Date().getTime()
+            };
+            await db.collection("chats").doc(chatId).collection("messages").add(msgData);
+        };
+        reader.readAsDataURL(file);
+        input.value = ''; // রিসেট ইনপুট
+    }
+
+    // 🎙️ ভয়েস মেসেজ রেকর্ডিং ও পাঠানো
+    async function toggleVoiceRecording() {
+        const btn = document.getElementById('voiceRecordBtn');
+        if (!mediaRecorder || mediaRecorder.state === "inactive") {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                voiceChunks = [];
+                
+                mediaRecorder.ondataavailable = e => voiceChunks.push(e.data);
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(voiceChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = async function() {
+                        if(!activeChatFriend) return;
+                        const chatId = [currentUser, activeChatFriend].sort().join('_');
+                        const msgData = {
+                            sender: currentUser,
+                            type: 'audio',
+                            fileData: reader.result,
+                            timestamp: new Date().getTime()
+                        };
+                        await db.collection("chats").doc(chatId).collection("messages").add(msgData);
+                    };
+                    reader.readAsDataURL(audioBlob);
+                    
+                    // সমস্ত ট্র‍্যাক স্টপ করা পারমিশন আইকন রিমুভ করার জন্য
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                btn.classList.add('rec-active');
+            } catch (e) { alert("মাইক্রোফোন অ্যাক্সেস পাওয়া যায়নি!"); }
+        } else {
+            mediaRecorder.stop();
+            btn.classList.remove('rec-active');
+        }
+    }
+
+    async function addFriend() { const f = document.getElementById('friendUsername').value.trim().toLowerCase(); if(!f || f === currentUser) return; await db.collection("users").doc(currentUser).update({ friends: firebase.firestore.FieldValue.arrayUnion(f) }); await db.collection("users").doc(f).update({ friends: firebase.firestore.FieldValue.arrayUnion(currentUser) }); alert("যুক্ত হয়েছে!"); document.getElementById('friendUsername').value = ''; }
     document.getElementById('messageInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
 </script>
 </body>
