@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MHSMS - লাইভ ভয়েস ও ভিডিও কলিং</title>
+    <title>MHSMS - লাইভ ভয়েস ও ভিডিও কলিং</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -87,7 +87,7 @@
 <div id="authScreen" class="auth-container">
     <h2>MHSMS সাইন-ইন 🌸</h2>
     <input type="text" id="usernameInput" placeholder="ইউজারনেম (ছোট হাতের ইংরেজি)">
-    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
+    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
     <button id="authBtn" onclick="handleAuth()">লগইন / রেজিস্টার</button>
 </div>
 
@@ -164,7 +164,7 @@
     let unsubscribeChat = null;
     let unsubscribeCalls = null;
     
-    // WebRTC ভ্যারিয়েবলস
+    // WebRTC ভ্যারিয়েবলস
     let localStream = null;
     let remoteStream = null;
     let peerConnection = null;
@@ -180,7 +180,7 @@
     async function handleAuth() {
         const username = document.getElementById('usernameInput').value.trim().toLowerCase();
         const password = document.getElementById('passwordInput').value.trim();
-        if(!username || password.length < 6) { alert("সঠিক ইউজারনেম ও পাসওয়ার্ড দিন।"); return; }
+        if(!username || password.length < 6) { alert("সঠিক ইউজারনেম ও পাসওয়ার্ড দিন।"); return; }
         try {
             const userRef = db.collection("users").doc(username);
             const doc = await userRef.get();
@@ -188,7 +188,7 @@
             else if (!doc.exists) {
                 await userRef.set({ username, password, friends: [] });
                 loginSuccess(username);
-            } else { alert("ভুল পাসওয়ার্ড!"); }
+            } else { alert("ভুল পাসওয়ার্ড!"); }
         } catch (e) { alert("এরর: " + e.message); }
     }
 
@@ -211,13 +211,13 @@
                 const batch = db.batch();
                 snapshot.forEach(doc => batch.delete(doc.ref));
                 await batch.commit();
-                alert("চ্যাট হিস্ট্রি ডিলিট করা হয়েছে!");
+                alert("চ্যাট হিস্ট্রি ডিলিট করা হয়েছে!");
                 if(activeChatFriend === friendName) {
                     document.getElementById('messageArea').innerHTML = '';
                     document.getElementById('chatActions').classList.add('hidden');
                     document.getElementById('currentChatUser').innerText = "কোনো বন্ধু সিলেক্ট করুন";
                 }
-            } catch (e) { alert("মুছে ফেলা সম্ভব হয়নি: " + e.message); }
+            } catch (e) { alert("মুছে ফেলা সম্ভব হয়নি: " + e.message); }
         }
     }
 
@@ -263,9 +263,13 @@
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
         remoteStream = new MediaStream();
-        document.getElementById('remoteVideo').srcObject = remoteStream;
+        const remoteVideo = document.getElementById('remoteVideo');
+        remoteVideo.srcObject = remoteStream;
+        
+        // [MODIFIEDHERE] রিমোট স্ট্রিম ধরার সাথে সাথে প্লে মেথড ট্রিগার করা হয়েছে
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+            remoteVideo.play().catch(err => console.log("অটো-প্লে পলিসি ব্লক করেছে:", err));
         };
 
         // ICE Candidate জেনারেট করা
@@ -333,7 +337,7 @@
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: data.type === 'Video' });
             document.getElementById('videoStreams').classList.remove('hidden');
             document.getElementById('localVideo').srcObject = localStream;
-        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন চালু করা যায়নি!"); return; }
+        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন চালু করা যায়নি!"); return; }
 
         document.getElementById('callTypeStatus').innerText = "Connecting...";
         document.getElementById('btnAcceptCall').classList.add('hidden');
@@ -342,9 +346,13 @@
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
         remoteStream = new MediaStream();
-        document.getElementById('remoteVideo').srcObject = remoteStream;
+        const remoteVideo = document.getElementById('remoteVideo');
+        remoteVideo.srcObject = remoteStream;
+        
+        // [MODIFIEDHERE] রিসিভার এন্ডেও অনট্র্যাক প্লে মেথড যুক্ত করা হয়েছে
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+            remoteVideo.play().catch(err => console.log("অটো-প্লে পলিসি ব্লক করেছে:", err));
         };
 
         // রিসিভারের ICE Candidate পাঠানো
@@ -427,7 +435,7 @@
             .onSnapshot(snapshot => {
                 const area = document.getElementById('messageArea'); area.innerHTML = '';
                 snapshot.forEach(doc => {
-                    const data = doc.data(); const msgId = doc.id;
+                    const data = doc.data();
                     const wrapper = document.createElement('div'); wrapper.classList.add('message-wrapper');
                     const container = document.createElement('div'); container.classList.add('message-container');
                     const msgDiv = document.createElement('div'); msgDiv.classList.add('message', data.sender === currentUser ? 'outgoing' : 'incoming');
@@ -451,7 +459,7 @@
         input.value = '';
     }
 
-    async function addFriend() { const f = document.getElementById('friendUsername').value.trim().toLowerCase(); if(!f || f === currentUser) return; await db.collection("users").doc(currentUser).update({ friends: firebase.firestore.FieldValue.arrayUnion(f) }); await db.collection("users").doc(f).update({ friends: firebase.firestore.FieldValue.arrayUnion(currentUser) }); alert("যুক্ত হয়েছে!"); document.getElementById('friendUsername').value = ''; }
+    async function addFriend() { const f = document.getElementById('friendUsername').value.trim().toLowerCase(); if(!f || f === currentUser) return; await db.collection("users").doc(currentUser).update({ friends: firebase.firestore.FieldValue.arrayUnion(f) }); await db.collection("users").doc(f).update({ friends: firebase.firestore.FieldValue.arrayUnion(currentUser) }); alert("যুক্ত হয়েছে!"); document.getElementById('friendUsername').value = ''; }
     document.getElementById('messageInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
 </script>
 </body>
