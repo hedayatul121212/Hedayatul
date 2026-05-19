@@ -143,6 +143,9 @@
     <li onclick="triggerDeleteMessage()">🗑️ ডিলিট করুন</li>
 </ul>
 
+<audio id="ringtoneSound" loop src="https://assets.mixkit.co/active_storage/sfx/1359/1359-84.wav" preload="auto"></audio>
+<audio id="ringingSound" loop src="https://assets.mixkit.co/active_storage/sfx/1643/1643-84.wav" preload="auto"></audio>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -163,6 +166,7 @@
     let activeChatFriend = null;
     let unsubscribeChat = null;
     let unsubscribeCalls = null;
+    let isInitialLoad = true; // প্রথমবার পুরনো সব মেসেজের নোটিফিকেশন বন্ধ করার জন্য
     
     // WebRTC ভ্যারিয়েবলস
     let localStream = null;
@@ -170,12 +174,35 @@
     let peerConnection = null;
     let currentCallId = null;
 
-    // Google Free STUN Servers
     const rtcConfig = {
         iceServers: [
             { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
         ]
     };
+
+    // ব্রাউজার নোটিফিকেশন পারমিশন রিকোয়েস্ট
+    function requestNotificationPermission() {
+        if ("Notification" in window) {
+            Notification.requestPermission().then(permission => {
+                if(permission !== "granted") {
+                    console.log("নোটিফিকেশন পারমিশন দেওয়া হয়নি!");
+                }
+            });
+        }
+    }
+
+    // পুশ নোটিফিকেশন দেখানোর মূল ফাংশন
+    function showPushNotification(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            // যদি ইউজার অন্য ট্যাবে থাকে বা ব্রাউজার মিনিমাইজ করা থাকে
+            if (document.hidden) {
+                new Notification(title, {
+                    body: body,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/3616/3616215.png'
+                });
+            }
+        }
+    }
 
     async function handleAuth() {
         const username = document.getElementById('usernameInput').value.trim().toLowerCase();
@@ -196,9 +223,33 @@
         currentUser = username;
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('appScreen').classList.remove('hidden');
+        requestNotificationPermission(); // লগইন সফল হলে পারমিশন চাইবে
         loadFriends();
         listenForIncomingCalls();
+        listenForAllIncomingMessages(); // ব্যাকগ্রাউন্ড নোটিফিকেশনের জন্য গ্লোবাল লিসেনার
         document.addEventListener('click', () => document.getElementById('contextMenu').style.display = 'none');
+    }
+
+    // ব্যাকগ্রাউন্ডে বা অন্য ফ্রেন্ডের চ্যাটে থাকলেও মেসেজ আসলে পুশ নোটিফিকেশন দেখাবে
+    function listenForAllIncomingMessages() {
+        db.collectionGroup("messages")
+        .orderBy("timestamp", "desc")
+        .limit(1)
+        .onSnapshot(snapshot => {
+            if (isInitialLoad) { 
+                isInitialLoad = false; // পেজ লোডের সময় পুরনো মেসেজের পপআপ ব্লক করবে
+                return; 
+            }
+            snapshot.docChanges().forEach(change => {
+                if (change.type === "added") {
+                    const data = change.doc.data();
+                    // যদি মেসেজটি আপনার জন্য এসে থাকে এবং এই মুহূর্তে তার চ্যাটবক্স ওপেন না থাকে
+                    if (data.sender !== currentUser && activeChatFriend !== data.sender) {
+                        showPushNotification(`🌸 MHSMS - ${data.sender}`, data.text);
+                    }
+                }
+            });
+        });
     }
 
     async function clearChatFromList(friendName, event) {
@@ -245,7 +296,7 @@
         });
     }
 
-    // 📞 WebRTC + Firebase লাইভ কল ও কথা বলার সিস্টেম (১০০% ফিক্সড)
+    // 📞 লাইভ কলিং + সাউন্ড + পুশ নোটিফিকেশন সিস্টেম
     async function makeCall(type) {
         if(!activeChatFriend) return;
         currentCallId = currentUser + "_" + Date.now();
@@ -258,7 +309,9 @@
 
         showCallOverlay(activeChatFriend, `${type} Call - Ringing...`, false);
         
-        // WebRTC Connection তৈরি
+        // 🔊 কলার এন্ডে রিংইং সাউন্ড চালু (টুট টুট শব্দ)
+        document.getElementById('ringingSound').play().catch(e => console.log(e));
+
         peerConnection = new RTCPeerConnection(rtcConfig);
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
@@ -268,7 +321,7 @@
         
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
+            remoteVideo.play().catch(err => console.log(err));
         };
 
         const callDoc = db.collection("calls").doc(currentCallId);
@@ -278,7 +331,6 @@
             if(event.candidate) callerCandidatesCollection.add(event.candidate.toJSON());
         };
 
-        // Offer তৈরি করা (SDP)
         const offerDescription = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offerDescription);
 
@@ -290,7 +342,6 @@
             offer: { type: offerDescription.type, sdp: offerDescription.sdp }
         });
 
-        // Answer এবং রিসিভারের ICE Candidates এর জন্য অপেক্ষা করা (কলার এন্ড)
         callDoc.onSnapshot(snapshot => {
             const data = snapshot.data();
             if (data && data.answer && !peerConnection.currentRemoteDescription) {
@@ -299,11 +350,10 @@
             }
         });
 
-        // [ FIXED TYPO 1 ] এখানেও ভুল বানান ছিল, ঠিক করে RTCIceCandidate করা হলো
         callDoc.collection("receiverCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
-                    const candidate = new RTCIceCandidate (change.doc.data());
+                    const candidate = new RTCIceCandidate(change.doc.data());
                     peerConnection.addIceCandidate(candidate).catch(e => console.error(e));
                 }
             });
@@ -318,10 +368,17 @@
             .where("status", "==", "ringing")
             .onSnapshot(snapshot => {
                 snapshot.forEach(doc => {
-                    if (currentCallId) return; // অলরেডি কথা বলতে থাকলে ইগনোর করবে
+                    if (currentCallId) return; 
                     const data = doc.data();
                     currentCallId = doc.id;
+                    
                     showCallOverlay(data.caller, `Incoming ${data.type} Call...`, true);
+                    
+                    // 🚨 পুশ নোটিফিকেশন পাঠানো (ট্যাব মিনিমাইজ থাকলেও স্ক্রিনে পপআপ আসবে)
+                    showPushNotification(`📞 ইনকামিং কল!`, `${data.caller} আপনাকে কল করছেন...`);
+                    
+                    // 🔊 রিসিভার এন্ডে রিংটোন বাজানো
+                    document.getElementById('ringtoneSound').play().catch(e => console.log(e));
                 });
             });
     }
@@ -331,6 +388,10 @@
         const docSnapshot = await callDoc.get();
         if(!docSnapshot.exists) return;
         const data = docSnapshot.data();
+
+        // রিসিভ করার সাথে সাথে রিংটোন বন্ধ করা
+        document.getElementById('ringtoneSound').pause();
+        document.getElementById('ringtoneSound').currentTime = 0;
 
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: data.type === 'Video' });
@@ -350,20 +411,17 @@
         
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
+            remoteVideo.play().catch(err => console.log(err));
         };
 
-        // রিসিভারের ICE Candidate পাঠানো
         const receiverCandidatesCollection = callDoc.collection("receiverCandidates");
         peerConnection.onicecandidate = event => {
             if(event.candidate) receiverCandidatesCollection.add(event.candidate.toJSON());
         };
 
-        // কলারের অফার সেট করা
         const offerDescription = data.offer;
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
 
-        // অ্যান্সার তৈরি করা
         const answerDescription = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answerDescription);
 
@@ -372,11 +430,10 @@
             answer: { type: answerDescription.type, sdp: answerDescription.sdp }
         });
 
-        // [ FIXED TYPO 2 ] এখানেও ভুল বানানটি ঠিক করে RTCIceCandidate করা হলো
         callDoc.collection("callerCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
-                    const candidate = new RTCIiceCandidate(change.doc.data());
+                    const candidate = new RTCIceCandidate(change.doc.data());
                     peerConnection.addIceCandidate(candidate).catch(e => console.error(e));
                 }
             });
@@ -386,11 +443,14 @@
     }
 
     function listenToCallStatus() {
-        if (unsubscribeCalls) unsubscribeCalls(); // ডুপ্লিকেট লিসেনার বন্ধ করা
+        if (unsubscribeCalls) unsubscribeCalls(); 
         unsubscribeCalls = db.collection("calls").doc(currentCallId).onSnapshot(doc => {
             if(!doc.exists) { cleanUpCallUI(); return; }
             const data = doc.data();
             if(data.status === "accepted") {
+                // কল কানেক্ট হলে কলারের রিংইং টিউন বন্ধ হবে
+                document.getElementById('ringingSound').pause();
+                document.getElementById('ringingSound').currentTime = 0;
                 document.getElementById('callTypeStatus').innerText = "Call Connected & Speaking... 🎙️";
             } else if(data.status === "ended") {
                 cleanUpCallUI();
@@ -421,13 +481,18 @@
         document.getElementById('btnAcceptCall').classList.add('hidden');
         document.getElementById('videoStreams').classList.add('hidden');
         
+        // সব সাউন্ড থামানো
+        document.getElementById('ringtoneSound').pause();
+        document.getElementById('ringtoneSound').currentTime = 0;
+        document.getElementById('ringingSound').pause();
+        document.getElementById('ringingSound').currentTime = 0;
+
         if(peerConnection) { peerConnection.close(); peerConnection = null; }
         if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
         if(remoteStream) { remoteStream.getTracks().forEach(track => track.stop()); remoteStream = null; }
         currentCallId = null;
     }
 
-    // মেসেজিং স্ক্রিপ্ট (অপরিবর্তিত)
     function loadMessages() {
         if (unsubscribeChat) unsubscribeChat();
         const chatId = [currentUser, activeChatFriend].sort().join('_');
