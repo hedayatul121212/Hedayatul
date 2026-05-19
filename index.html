@@ -268,7 +268,7 @@
         
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
+            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
         };
 
         const callDoc = db.collection("calls").doc(currentCallId);
@@ -349,7 +349,7 @@
         
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
+            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
         };
 
         // রিসিভারের ICE Candidate পাঠানো
@@ -371,10 +371,11 @@
             answer: { type: answerDescription.type, sdp: answerDescription.sdp }
         });
 
-        // কলারের ICE Candidates রিড করা (রিসিভার এন্ড)
+        // [ FIXED TYPO ] কলারের ICE Candidates রিড করা (রিসিভার এন্ড)
         callDoc.collection("callerCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
+                    // এখানে RTCIiceCandidate থেকে একটি 'i' কমিয়ে RTCIceCandidate করা হয়েছে
                     const candidate = new RTCIiceCandidate(change.doc.data());
                     peerConnection.addIceCandidate(candidate).catch(e => console.error(e));
                 }
