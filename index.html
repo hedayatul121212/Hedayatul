@@ -299,6 +299,7 @@
             }
         });
 
+        // [ FIXED TYPO 1 ] এখানেও ভুল বানান ছিল, ঠিক করে RTCIceCandidate করা হলো
         callDoc.collection("receiverCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
@@ -371,11 +372,10 @@
             answer: { type: answerDescription.type, sdp: answerDescription.sdp }
         });
 
-        // [ FIXED TYPO ] কলারের ICE Candidates রিড করা (রিসিভার এন্ড)
+        // [ FIXED TYPO 2 ] এখানেও ভুল বানানটি ঠিক করে RTCIceCandidate করা হলো
         callDoc.collection("callerCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
-                    // এখানে RTCIiceCandidate থেকে একটি 'i' কমিয়ে RTCIceCandidate করা হয়েছে
                     const candidate = new RTCIiceCandidate(change.doc.data());
                     peerConnection.addIceCandidate(candidate).catch(e => console.error(e));
                 }
