@@ -72,14 +72,14 @@
         .call-avatar { width: 120px; height: 120px; background: #ff758c; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 3rem; margin-bottom: 20px; box-shadow: 0 0 25px #ff758c; animation: pulse 1.5s infinite; }
         .call-status { font-size: 1.2rem; color: #ffccd5; margin-bottom: 30px; font-weight: bold; }
         
-        .call-buttons { display: flex; gap: 20px; z-index: 2100; }
+        .call-buttons { display: flex; gap: 20px; z-index: 2100; margin-top: 20px;}
         .btn-call { border: none; padding: 12px 35px; border-radius: 30px; font-size: 1rem; font-weight: bold; cursor: pointer; color: white; }
         .btn-accept { background: #28a745; box-shadow: 0 4px 10px rgba(40,167,69,0.4); }
         .btn-decline { background: #dc3545; box-shadow: 0 4px 10px rgba(220,53,69,0.4); }
 
         /* ভিডিও স্ট্রিম উইন্ডো */
-        .video-container { display: flex; gap: 15px; margin-top: 20px; width: 90%; max-width: 700px; justify-content: center; position: relative; }
-        video { width: 48%; height: auto; max-height: 300px; background: #222; border-radius: 15px; border: 2px solid #ff758c; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .video-container { display: flex; gap: 15px; margin-top: 10px; width: 90%; max-width: 700px; justify-content: center; position: relative; }
+        video { width: 48%; height: auto; max-height: 280px; background: #222; border-radius: 15px; border: 2px solid #ff758c; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         #localVideo { transform: scaleX(-1); } /* সেলফ মিররিং */
 
         @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(255, 117, 140, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0); } }
@@ -91,7 +91,7 @@
 <div id="authScreen" class="auth-container">
     <h2>MHSMS সাইন-ইন 🌸</h2>
     <input type="text" id="usernameInput" placeholder="ইউজারনেম (ছোট হাতের ইংরেজি)">
-    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
+    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ۶ অক্ষর)">
     <button id="authBtn" onclick="handleAuth()">লগইন / রেজিস্টার</button>
 </div>
 
@@ -166,17 +166,22 @@
     let activeChatFriend = null;
     let unsubscribeChat = null;
     
-    // WebRTC ও মিডিয়া ভ্যারিয়েবলস
     let localStream = null;
     let peerConnection = null;
     let currentCallId = null;
     let mediaRecorder = null;
     let voiceChunks = [];
 
+    // গ্লোবাল পাবলিক ও শক্তিশালী STUN সার্ভার লিস্ট (যাতে যেকোনো নেটওয়ার্কে কাজ করে)
     const rtcConfig = {
         iceServers: [
-            { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
-        ]
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun.services.mozilla.com' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+        ],
+        sdpSemantics: 'unified-plan'
     };
 
     async function handleAuth() {
@@ -246,36 +251,35 @@
         });
     }
 
-    // 📞 WebRTC লাইভ কলিং সিস্টেম (ফিক্সড অডিও ও ভিডিও ট্র‍্যাক)
+    // 📞 লাইভ কল মেকিং ফাংশন
     async function makeCall(type) {
         if(!activeChatFriend) return;
         currentCallId = currentUser + "_" + Date.now();
         
         try {
-            // অডিও এবং ভিডিও স্ট্রিম একসাথে নেওয়া
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'Video' });
+            showCallOverlay(activeChatFriend, `${type} Call - Ringing...`, false);
             
             if (type === 'Video') {
                 document.getElementById('videoStreams').classList.remove('hidden');
                 document.getElementById('localVideo').srcObject = localStream;
             }
-        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন পারমিশন দিন বা ডিভাইস চেক করুন!"); return; }
+        } catch (e) { alert("ক্যামেরা বা মাইক্রোফোন পারমিশন দিন!"); return; }
 
-        showCallOverlay(activeChatFriend, `${type} Call - Ringing...`, false);
-        
         peerConnection = new RTCPeerConnection(rtcConfig);
         
-        // সমস্ত লোকাল ট্র‍্যাক সংযোগে যুক্ত করা
+        // লোকাল ট্র‍্যাক পুশ করা
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-        // অপরপক্ষের ট্র‍্যাক রিসিভ করা ও হ্যান্ডেল করা
+        // রিমোট ট্র‍্যাক রিসিভ করার সাথে সাথে প্লে করা
         peerConnection.ontrack = event => {
-            const streams = event.streams[0];
-            if (type === 'Video') {
-                document.getElementById('videoStreams').classList.remove('hidden');
-                document.getElementById('remoteVideo').srcObject = streams;
-            } else {
-                document.getElementById('remoteAudio').srcObject = streams;
+            if (event.streams && event.streams[0]) {
+                if (type === 'Video') {
+                    document.getElementById('videoStreams').classList.remove('hidden');
+                    document.getElementById('remoteVideo').srcObject = event.streams[0];
+                } else {
+                    document.getElementById('remoteAudio').srcObject = event.streams[0];
+                }
             }
         };
 
@@ -330,6 +334,7 @@
             });
     }
 
+    // 📞 ইনকামিং কল রিসিভ করার ফাংশন
     async function answerCall() {
         const callDoc = db.collection("calls").doc(currentCallId);
         const docSnapshot = await callDoc.get();
@@ -350,13 +355,15 @@
         peerConnection = new RTCPeerConnection(rtcConfig);
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
+        // রিসিভারের ট্র‍্যাক শো করা
         peerConnection.ontrack = event => {
-            const streams = event.streams[0];
-            if (data.type === 'Video') {
-                document.getElementById('videoStreams').classList.remove('hidden');
-                document.getElementById('remoteVideo').srcObject = streams;
-            } else {
-                document.getElementById('remoteAudio').srcObject = streams;
+            if (event.streams && event.streams[0]) {
+                if (data.type === 'Video') {
+                    document.getElementById('videoStreams').classList.remove('hidden');
+                    document.getElementById('remoteVideo').srcObject = event.streams[0];
+                } else {
+                    document.getElementById('remoteAudio').srcObject = event.streams[0];
+                }
             }
         };
 
@@ -365,9 +372,7 @@
             if(event.candidate) receiverCandidatesCollection.add(event.candidate.toJSON());
         };
 
-        const offerDescription = data.offer;
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
-
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answerDescription = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answerDescription);
 
@@ -431,7 +436,7 @@
         currentCallId = null;
     }
 
-    // 📩 আপগ্রেডেড মেসেজিং স্ক্রিপ্ট (টেক্সট, ইমেজ এবং ভয়েস হ্যান্ডলার)
+    // মেসেজিং স্ক্রিপ্ট
     function loadMessages() {
         if (unsubscribeChat) unsubscribeChat();
         const chatId = [currentUser, activeChatFriend].sort().join('_');
@@ -445,7 +450,6 @@
                     const msgDiv = document.createElement('div'); msgDiv.classList.add('message', data.sender === currentUser ? 'outgoing' : 'incoming');
                     container.style.justifyContent = data.sender === currentUser ? 'flex-end' : 'flex-start';
                     
-                    // মেসেজের ধরন চেক করে রেন্ডার করা
                     if (data.type === 'image') {
                         msgDiv.innerHTML = `<img src="${data.fileData}">`;
                     } else if (data.type === 'audio') {
@@ -473,7 +477,6 @@
         input.value = '';
     }
 
-    // 🖼️ ছবি পাঠানোর ফাংশন (Base64 কনভার্সন)
     function sendImageFile(input) {
         if (!input.files || !input.files[0] || !activeChatFriend) return;
         const file = input.files[0];
@@ -489,10 +492,9 @@
             await db.collection("chats").doc(chatId).collection("messages").add(msgData);
         };
         reader.readAsDataURL(file);
-        input.value = ''; // রিসেট ইনপুট
+        input.value = '';
     }
 
-    // 🎙️ ভয়েস মেসেজ রেকর্ডিং ও পাঠানো
     async function toggleVoiceRecording() {
         const btn = document.getElementById('voiceRecordBtn');
         if (!mediaRecorder || mediaRecorder.state === "inactive") {
@@ -518,8 +520,6 @@
                         await db.collection("chats").doc(chatId).collection("messages").add(msgData);
                     };
                     reader.readAsDataURL(audioBlob);
-                    
-                    // সমস্ত ট্র‍্যাক স্টপ করা পারমিশন আইকন রিমুভ করার জন্য
                     stream.getTracks().forEach(track => track.stop());
                 };
                 
