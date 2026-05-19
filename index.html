@@ -303,7 +303,7 @@
         callDoc.collection("receiverCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
-                    const candidate = new RTCIiceCandidate(change.doc.data());
+                    const candidate = new RTCIceCandidate (change.doc.data());
                     peerConnection.addIceCandidate(candidate).catch(e => console.error(e));
                 }
             });
