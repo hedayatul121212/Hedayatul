@@ -91,7 +91,7 @@
 <div id="authScreen" class="auth-container">
     <h2>MHSMS সাইন-ইন 🌸</h2>
     <input type="text" id="usernameInput" placeholder="ইউজারনেম (ছোট হাতের ইংরেজি)">
-    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ۶ অক্ষর)">
+    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
     <button id="authBtn" onclick="handleAuth()">লগইন / রেজিস্টার</button>
 </div>
 
@@ -172,14 +172,13 @@
     let mediaRecorder = null;
     let voiceChunks = [];
 
-    // গ্লোবাল পাবলিক ও শক্তিশালী STUN সার্ভার লিস্ট (যাতে যেকোনো নেটওয়ার্কে কাজ করে)
+    // শক্তিশালী গ্লোবাল STUN সার্ভার সেটআপ
     const rtcConfig = {
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun.services.mozilla.com' },
-            { urls: 'stun:global.stun.twilio.com:3478' }
+            { urls: 'stun:stun.services.mozilla.com' }
         ],
         sdpSemantics: 'unified-plan'
     };
@@ -207,26 +206,6 @@
         listenForIncomingCalls();
     }
 
-    async function clearChatFromList(friendName, event) {
-        event.stopPropagation();
-        if (confirm(`আপনি কি নিশ্চিতভাবে "${friendName}" এর সমস্ত চ্যাট হিস্ট্রি ডিলিট করতে চান?`)) {
-            const chatId = [currentUser, friendName].sort().join('_');
-            try {
-                const messagesRef = db.collection("chats").doc(chatId).collection("messages");
-                const snapshot = await messagesRef.get();
-                const batch = db.batch();
-                snapshot.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-                alert("চ্যাট হিস্ট্রি ডিলিট করা হয়েছে!");
-                if(activeChatFriend === friendName) {
-                    document.getElementById('messageArea').innerHTML = '';
-                    document.getElementById('chatActions').classList.add('hidden');
-                    document.getElementById('currentChatUser').innerText = "কোনো বন্ধু সিলেক্ট করুন";
-                }
-            } catch (e) { alert("মুছে ফেলা সম্ভব হয়নি: " + e.message); }
-        }
-    }
-
     function loadFriends() {
         db.collection("users").doc(currentUser).onSnapshot((doc) => {
             const list = document.getElementById('friendList');
@@ -251,12 +230,33 @@
         });
     }
 
-    // 📞 লাইভ কল মেকিং ফাংশন
+    async function clearChatFromList(friendName, event) {
+        event.stopPropagation();
+        if (confirm(`আপনি কি নিশ্চিতভাবে "${friendName}" এর সমস্ত চ্যাট হিস্ট্রি ডিলিট করতে চান?`)) {
+            const chatId = [currentUser, friendName].sort().join('_');
+            try {
+                const messagesRef = db.collection("chats").doc(chatId).collection("messages");
+                const snapshot = await messagesRef.get();
+                const batch = db.batch();
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                alert("চ্যাট হিস্ট্রি ডিলিট করা হয়েছে!");
+                if(activeChatFriend === friendName) {
+                    document.getElementById('messageArea').innerHTML = '';
+                    document.getElementById('chatActions').classList.add('hidden');
+                    document.getElementById('currentChatUser').innerText = "কোনো বন্ধু সিলেক্ট করুন";
+                }
+            } catch (e) { alert("মুছে ফেলা সম্ভব হয়নি: " + e.message); }
+        }
+    }
+
+    // 📞 কল তৈরি করা (Caller End)
     async function makeCall(type) {
         if(!activeChatFriend) return;
         currentCallId = currentUser + "_" + Date.now();
         
         try {
+            // কল টাইপ যাই হোক, অডিও ট্র‍্যাক বাধ্যতামূলক অন করা হয়েছে
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'Video' });
             showCallOverlay(activeChatFriend, `${type} Call - Ringing...`, false);
             
@@ -264,30 +264,33 @@
                 document.getElementById('videoStreams').classList.remove('hidden');
                 document.getElementById('localVideo').srcObject = localStream;
             }
-        } catch (e) { alert("ক্যামেরা বা মাইক্রোফোন পারমিশন দিন!"); return; }
+        } catch (e) { alert("ক্যামেরা বা মাইক্রোফোন পারমিশন ব্লকড!"); return; }
 
         peerConnection = new RTCPeerConnection(rtcConfig);
         
-        // লোকাল ট্র‍্যাক পুশ করা
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-        // রিমোট ট্র‍্যাক রিসিভ করার সাথে সাথে প্লে করা
+        // ট্র‍্যাক রিসিভ হ্যান্ডলার (অটো-প্লে পলিসি বাইপাস লজিকসহ)
         peerConnection.ontrack = event => {
             if (event.streams && event.streams[0]) {
+                const remoteStream = event.streams[0];
                 if (type === 'Video') {
                     document.getElementById('videoStreams').classList.remove('hidden');
-                    document.getElementById('remoteVideo').srcObject = event.streams[0];
+                    const rVideo = document.getElementById('remoteVideo');
+                    rVideo.srcObject = remoteStream;
+                    rVideo.play().catch(e => console.log("Play failed", e));
                 } else {
-                    document.getElementById('remoteAudio').srcObject = event.streams[0];
+                    const rAudio = document.getElementById('remoteAudio');
+                    rAudio.srcObject = remoteStream;
+                    rAudio.play().catch(e => console.log("Play failed", e));
                 }
             }
         };
 
         const callDoc = db.collection("calls").doc(currentCallId);
-        const callerCandidatesCollection = callDoc.collection("callerCandidates");
         
         peerConnection.onicecandidate = event => {
-            if(event.candidate) callerCandidatesCollection.add(event.candidate.toJSON());
+            if(event.candidate) callDoc.collection("callerCandidates").add(event.candidate.toJSON());
         };
 
         const offerDescription = await peerConnection.createOffer();
@@ -301,14 +304,15 @@
             offer: { type: offerDescription.type, sdp: offerDescription.sdp }
         });
 
+        // অ্যান্সার ট্র‍্যাক করা
         callDoc.onSnapshot(snapshot => {
             const data = snapshot.data();
             if (data && data.answer && !peerConnection.currentRemoteDescription) {
-                const answerDescription = new RTCSessionDescription(data.answer);
-                peerConnection.setRemoteDescription(answerDescription);
+                peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
             }
         });
 
+        // ক্যান্ডিডেট রিসিভ ও সিঙ্ক করা
         callDoc.collection("receiverCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
@@ -334,7 +338,7 @@
             });
     }
 
-    // 📞 ইনকামিং কল রিসিভ করার ফাংশন
+    // 📞 কল রিসিভ করা (Receiver End)
     async function answerCall() {
         const callDoc = db.collection("calls").doc(currentCallId);
         const docSnapshot = await callDoc.get();
@@ -347,7 +351,7 @@
                 document.getElementById('videoStreams').classList.remove('hidden');
                 document.getElementById('localVideo').srcObject = localStream;
             }
-        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন চালু করা যায়নি!"); hangUpCall(); return; }
+        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন একটিভ করা যায়নি!"); hangUpCall(); return; }
 
         document.getElementById('callTypeStatus').innerText = "Connecting...";
         document.getElementById('btnAcceptCall').classList.add('hidden');
@@ -355,23 +359,27 @@
         peerConnection = new RTCPeerConnection(rtcConfig);
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-        // রিসিভারের ট্র‍্যাক শো করা
         peerConnection.ontrack = event => {
             if (event.streams && event.streams[0]) {
+                const remoteStream = event.streams[0];
                 if (data.type === 'Video') {
                     document.getElementById('videoStreams').classList.remove('hidden');
-                    document.getElementById('remoteVideo').srcObject = event.streams[0];
+                    const rVideo = document.getElementById('remoteVideo');
+                    rVideo.srcObject = remoteStream;
+                    rVideo.play().catch(e => console.log(e));
                 } else {
-                    document.getElementById('remoteAudio').srcObject = event.streams[0];
+                    const rAudio = document.getElementById('remoteAudio');
+                    rAudio.srcObject = remoteStream;
+                    rAudio.play().catch(e => console.log(e));
                 }
             }
         };
 
-        const receiverCandidatesCollection = callDoc.collection("receiverCandidates");
         peerConnection.onicecandidate = event => {
-            if(event.candidate) receiverCandidatesCollection.add(event.candidate.toJSON());
+            if(event.candidate) callDoc.collection("receiverCandidates").add(event.candidate.toJSON());
         };
 
+        // রিমোট ডেসক্রিপশন সেট করার পর ক্যান্ডিডেট পুশ করা নিরাপদ
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answerDescription = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answerDescription);
@@ -436,7 +444,7 @@
         currentCallId = null;
     }
 
-    // মেসেজিং স্ক্রিপ্ট
+    // 📩 চ্যাট এবং মিডিয়া মেসেজিং লজিক
     function loadMessages() {
         if (unsubscribeChat) unsubscribeChat();
         const chatId = [currentUser, activeChatFriend].sort().join('_');
