@@ -3,329 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ফেসবুক ক্লোন ও ফ্রেন্ড সিস্টেম</title>
+    <title>MHSMS - লাইভ ভয়েস ও ভিডিও কলিং</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background-color: #f0f2f5; color: #1c1e21; display: flex; flex-direction: column; height: 100vh; }
-        .navbar { background-color: #ffffff; height: 56px; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .navbar .logo { color: #1877f2; font-size: 24px; font-weight: bold; text-decoration: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); display: flex; justify-content: center; align-items: center; height: 100vh; }
         
-        .app-container { display: flex; max-width: 1200px; width: 100%; margin: 20px auto; gap: 20px; padding: 0 15px; flex-grow: 1; }
+        .app-container { width: 100%; max-width: 950px; height: 85vh; background: rgba(255, 255, 255, 0.9); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; overflow: hidden; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); }
         
-        /* লেফট সাইডবার: ফ্রেন্ড রিকোয়েস্ট প্যানেল */
-        .sidebar { flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); height: fit-content; }
-        .sidebar h4 { margin-bottom: 10px; color: #1877f2; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .request-item, .user-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 5px; background: #f9f9f9; border-radius: 4px; font-size: 14px; }
-        .btn-small { padding: 4px 8px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; color: white; }
-        .btn-accept { background: #42b72a; }
-        .btn-req { background: #1877f2; }
+        /* Auth Screen */
+        .auth-container { width: 100%; max-width: 400px; background: white; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 2px solid #ffb7b2; }
+        .auth-container h2 { margin-bottom: 20px; color: #ff6b6b; font-size: 1.8rem; }
+        .auth-container input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ffccd5; border-radius: 25px; outline: none; transition: 0.3s; padding-left: 20px; }
+        .auth-container input:focus { border-color: #ff6b6b; box-shadow: 0 0 8px rgba(255,107,107,0.2); }
+        .auth-container button { width: 100%; padding: 14px; background: linear-gradient(45deg, #ff6b6b, #ff8e8e); color: white; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; box-shadow: 0 4px 10px rgba(255,107,107,0.3); }
+        
+        /* Sidebar */
+        .sidebar { width: 30%; border-right: 1px solid #ffe5ec; display: flex; flex-direction: column; background: #fff5f7; }
+        .sidebar-header { padding: 20px 15px; background: linear-gradient(45deg, #ff758c, #ff7eb3); color: white; font-weight: bold; font-size: 1.3rem; text-align: center; position: relative; overflow: hidden; }
+        .animated-logo { display: inline-block; font-family: 'Arial Black', sans-serif; letter-spacing: 2px; text-shadow: 0 0 8px rgba(255, 255, 255, 0.6); animation: moveAround 4s ease-in-out infinite alternate, glowEffect 1.5s ease-in-out infinite alternate; }
 
-        /* মিডল: নিউজফিড */
-        .feed-container { flex: 2; max-width: 600px; }
-        .create-post { background-color: #ffffff; border-radius: 8px; padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); margin-bottom: 20px; }
-        .create-post textarea { width: 100%; border: none; outline: none; resize: none; background-color: #f0f2f5; border-radius: 20px; padding: 12px 20px; font-size: 15px; margin-bottom: 10px; }
-        .post-btn { background-color: #1877f2; color: white; border: none; width: 100%; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .post-item { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        @keyframes moveAround { 0% { transform: translate(0, 0); } 50% { transform: translate(6px, -3px); } 100% { transform: translate(-6px, 3px); } }
+        @keyframes glowEffect { from { text-shadow: 0 0 4px #fff, 0 0 10px #ff4d6d, 0 0 20px #ff4d6d; } to { text-shadow: 0 0 8px #fff, 0 0 18px #ffb7b2, 0 0 35px #ff758c; } }
+
+        .add-friend-box { padding: 12px; display: flex; gap: 8px; background: #fff; border-bottom: 1px solid #ffe5ec; }
+        .add-friend-box input { flex: 1; padding: 10px; border: 1px solid #ffccd5; border-radius: 20px; outline: none; padding-left: 15px; }
+        .add-friend-box button { padding: 0 15px; background: #ff4d6d; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; }
         
-        /* রাইট: চ্যাট বক্স */
-        .chat-container { flex: 1; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); display: flex; flex-direction: column; height: 450px; position: sticky; top: 76px; }
-        .chat-header { background-color: #1877f2; color: white; padding: 10px 15px; font-weight: bold; border-top-left-radius: 8px; border-top-right-radius: 8px; }
-        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message { background-color: #e4e6eb; padding: 8px 12px; border-radius: 15px; max-width: 75%; font-size: 14px; align-self: flex-start; }
-        .message.my-message { background-color: #0084ff; color: white; align-self: flex-end; }
-        .chat-input-area { display: flex; padding: 10px; border-top: 1px solid #e4e6eb; }
-        .chat-input-area input { flex: 1; border: none; background-color: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
-        .chat-input-area button { background: none; border: none; color: #1877f2; font-weight: bold; margin-left: 10px; cursor: pointer; }
+        .friend-list { flex: 1; overflow-y: auto; list-style: none; }
+        .friend-item { padding: 15px 12px; border-bottom: 1px solid #ffe5ec; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 500; color: #4a4a4a; }
+        .friend-item:hover { background: #ffe5ec; }
+        .friend-item.active { background: #ffccd5; color: #ff0040; font-weight: bold; border-left: 5px solid #ff4d6d; }
+        .list-delete-btn { color: #dc3545; font-size: 1.1rem; padding: 0 5px; transition: 0.2s; cursor: pointer; }
+        .list-delete-btn:hover { transform: scale(1.2); }
+
+        /* Chat Area */
+        .chat-area { width: 70%; display: flex; flex-direction: column; background: #fffbfb; position: relative; }
+        .chat-header { padding: 15px; background: #fff0f3; border-bottom: 1px solid #ffe5ec; font-weight: bold; font-size: 1rem; color: #ff4d6d; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .chat-header-left { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-actions-container { display: flex; align-items: center; gap: 15px; }
+        .call-btn { background: none; border: none; font-size: 1.3rem; cursor: pointer; transition: 0.2s; padding: 4px 8px; border-radius: 5px; }
+        .call-btn:hover { background: rgba(255, 117, 140, 0.15); transform: scale(1.1); }
         
-        /* পপআপ */
-        .name-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .popup-box { background: white; padding: 20px; border-radius: 8px; text-align: center; }
-        .popup-box input { padding: 8px; margin-bottom: 10px; width: 100%; border: 1px solid #ccc; border-radius: 4px; }
-        .popup-box button { background: #1877f2; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .whatsapp-support-btn { display: flex; align-items: center; gap: 4px; background: #25D366; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; text-decoration: none; font-weight: bold; }
+
+        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png'); }
+        .message-wrapper { display: flex; flex-direction: column; width: 100%; position: relative; margin-bottom: 5px; }
+        .message-container { display: flex; align-items: center; width: 100%; position: relative; transition: transform 0.2s ease; cursor: grab; user-select: none; }
+        .message { padding: 12px 16px; border-radius: 20px; max-width: 65%; word-wrap: break-word; font-size: 0.95rem; position: relative; }
+        .message.incoming { background: #f1f3f5; align-self: flex-start !important; border-bottom-left-radius: 5px; color: #333; }
+        .message.outgoing { background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%); color: white; align-self: flex-end !important; border-bottom-right-radius: 5px; }
+        .msg-time { font-size: 0.7rem; color: #a1a1a1; margin-top: 4px; display: block; }
+
+        .reply-preview-bar { background: #ffe5ec; padding: 8px 15px; border-top: 1px solid #ffccd5; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #ff4d6d; }
+        .close-reply-btn { cursor: pointer; font-weight: bold; color: #ff6b6b; }
+
+        .input-area { display: flex; padding: 15px; border-top: 1px solid #ffe5ec; background: #fff0f3; }
+        .input-area input { flex: 1; padding: 14px 20px; border: 1px solid #ffccd5; border-radius: 30px; outline: none; font-size: 0.95rem; }
+        .input-area button { background: linear-gradient(45deg, #ff758c, #ff7eb3); color: white; border: none; padding: 0 25px; margin-left: 10px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        
+        /* 📞 রিয়েল-টাইম কলিং স্ক্রিন ওভারলে */
+        .call-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; color: white; text-align: center; }
+        .call-avatar { width: 120px; height: 120px; background: #ff758c; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 3rem; margin-bottom: 20px; box-shadow: 0 0 25px #ff758c; animation: pulse 1.5s infinite; }
+        .call-status { font-size: 1.2rem; color: #ffccd5; margin-bottom: 30px; font-weight: bold; }
+        
+        .call-buttons { display: flex; gap: 20px; }
+        .btn-call { border: none; padding: 12px 35px; border-radius: 30px; font-size: 1rem; font-weight: bold; cursor: pointer; color: white; }
+        .btn-accept { background: #28a745; box-shadow: 0 4px 10px rgba(40,167,69,0.4); }
+        .btn-decline { background: #dc3545; box-shadow: 0 4px 10px rgba(220,53,69,0.4); }
+
+        /* ভিডিও স্ট্রিম উইন্ডো */
+        .video-container { display: flex; gap: 10px; margin-top: 20px; width: 90%; max-width: 600px; justify-content: center; }
+        video { width: 45%; max-height: 250px; background: #222; border-radius: 10px; transform: scaleX(-1); border: 2px solid #ff758c; }
+
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(255, 117, 140, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0); } }
+        .context-menu { position: absolute; background: white; border: 1px solid #ffccd5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; display: none; list-style: none; }
+        .context-menu li { padding: 10px 20px; cursor: pointer; font-size: 0.9rem; color: #333; }
+        .context-menu li:hover { background: #ffe5ec; color: #ff4d6d; }
+        .hidden { display: none !important; }
     </style>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
 
-    <div class="name-popup" id="namePopup">
-        <div class="popup-box">
-            <h3>আপনার নাম লিখুন</h3>
-            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">অ্যাকাউন্ট খোলার পর ফ্রেন্ড রিকোয়েস্ট পাঠাতে পারবেন</p>
-            <input type="text" id="userNameInput" placeholder="যেমন: আবির">
-            <button onclick="saveName()">প্রবেশ করুন</button>
+<div id="authScreen" class="auth-container">
+    <h2>MHSMS সাইন-ইন 🌸</h2>
+    <input type="text" id="usernameInput" placeholder="ইউজারনেম (ছোট হাতের ইংরেজি)">
+    <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
+    <button id="authBtn" onclick="handleAuth()">লগইন / রেজিস্টার</button>
+</div>
+
+<div id="appScreen" class="app-container hidden">
+    <div class="sidebar">
+        <div class="sidebar-header"><span class="animated-logo">MHSMS</span></div>
+        <div class="add-friend-box">
+            <input type="text" id="friendUsername" placeholder="বন্ধুর ইউজারনেম...">
+            <button onclick="addFriend()">অ্যাড</button>
+        </div>
+        <ul class="friend-list" id="friendList"></ul>
+    </div>
+    
+    <div class="chat-area">
+        <div class="chat-header">
+            <div class="chat-header-left" id="currentChatUser">কোনো বন্ধু সিলেক্ট করুন</div>
+            <div class="chat-actions-container hidden" id="chatActions">
+                <button class="call-btn" onclick="makeCall('Audio')">📞</button>
+                <button class="call-btn" onclick="makeCall('Video')">📹</button>
+                <a href="https://wa.me/8801782601342" target="_blank" class="whatsapp-support-btn">সাপোর্ট</a>
+            </div>
+        </div>
+        <div class="message-area" id="messageArea"></div>
+        <div id="replyPreviewBar" class="reply-preview-bar hidden">
+            <span>Replying to: <i id="replyPreviewText">...</i></span>
+            <div class="close-reply-btn" onclick="cancelReply()">✕</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="মেসেজ লিখুন..." autocomplete="off">
+            <button id="sendBtn" onclick="sendMessage()">পাঠান</button>
         </div>
     </div>
+</div>
 
-    <nav class="navbar">
-        <div class="nav-left"><a href="#" class="logo">facebook</a></div>
-        <div class="nav-right" id="userDisplay" style="font-weight: bold; color: #555;"></div>
-    </nav>
-
-    <div class="app-container">
-        
-        <div class="sidebar">
-            <h4>অন্যান্য ইউজাররা</h4>
-            <div id="allUsersList">লোডিং...</div>
-            <br>
-            <h4>আগত ফ্রেন্ড রিকোয়েস্ট</h4>
-            <div id="friendRequestsList">কোনো রিকোয়েস্ট নেই</div>
-        </div>
-        
-        <div class="feed-container">
-            <div class="create-post">
-                <textarea id="postText" rows="2" placeholder="আপনার মনে এখন কী চলছে?"></textarea>
-                <button class="post-btn" onclick="createNewPost()">পোস্ট করুন</button>
-            </div>
-            <div class="feed" id="newsFeed">
-                <p style="text-align: center; color: #777;">ফ্রেন্ড রিকোয়েস্ট অ্যাকসেপ্ট হলে এখানে পোস্ট দেখতে পাবেন।</p>
-            </div>
-        </div>
-
-        <div class="chat-container">
-            <div class="chat-header">💬 ফ্রেন্ডস লাইভ চ্যাট গ্রুপ</div>
-            <div class="chat-messages" id="chatBox">
-                <p style="text-align: center; color: #aaadba; font-size: 13px; margin-top: 20px;">বন্ধুদের সাথে চ্যাট করতে আগে কানেক্ট হন।</p>
-            </div>
-            <div class="chat-input-area">
-                <input type="text" id="msgInput" placeholder="একটি মেসেজ লিখুন..." onkeypress="checkEnter(event)">
-                <button onclick="sendMsg()">পাঠান</button>
-            </div>
-        </div>
+<div id="callOverlay" class="call-overlay hidden">
+    <div class="call-avatar" id="callAvatar">👤</div>
+    <h2 id="callUserName">User</h2>
+    <div class="call-status" id="callTypeStatus">Calling...</div>
+    
+    <div class="call-buttons">
+        <button id="btnAcceptCall" class="btn-call btn-accept hidden" onclick="answerCall()">Receive</button>
+        <button class="btn-call btn-decline" onclick="hangUpCall()">End Call</button>
     </div>
 
-    <script>
-        // Firebase কনফিগারেশন
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzbhEyAKewnyRUIYc9yrf5Wt9J8oJsvrA",
-            authDomain: "mhbook-ccd72.firebaseapp.com",
-            projectId: "mhbook-ccd72",
-            storageBucket: "mhbook-ccd72.firebasestorage.app",
-            messagingSenderId: "906046799035",
-            appId: "1:906046799035:web:f06f65bbd66c3d8157fd9e"
+    <div id="videoStreams" class="video-container hidden">
+        <video id="localVideo" autoplay playsinline muted></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+</div>
+
+<ul id="contextMenu" class="context-menu">
+    <li onclick="triggerEditMessage()">✏️ এডিট করুন</li>
+    <li onclick="triggerDeleteMessage()">🗑️ ডিলিট করুন</li>
+</ul>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD1p-aoUP7QUEFqGCL5j7YE5RWnV7Uwd0A",
+        authDomain: "hedayatul-4487e.firebaseapp.com",
+        projectId: "hedayatul-4487e",
+        storageBucket: "hedayatul-4487e.firebasestorage.app",
+        messagingSenderId: "120479258973",
+        appId: "1:120479258973:web:3280d2794466b1537030b4"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let currentUser = null;
+    let activeChatFriend = null;
+    let unsubscribeChat = null;
+    let unsubscribeCalls = null;
+    
+    // WebRTC ভ্যারিয়েবলস
+    let localStream = null;
+    let remoteStream = null;
+    let peerConnection = null;
+    let currentCallId = null;
+
+    // Google Free STUN Servers
+    const rtcConfig = {
+        iceServers: [
+            { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
+        ]
+    };
+
+    async function handleAuth() {
+        const username = document.getElementById('usernameInput').value.trim().toLowerCase();
+        const password = document.getElementById('passwordInput').value.trim();
+        if(!username || password.length < 6) { alert("সঠিক ইউজারনেম ও পাসওয়ার্ড দিন।"); return; }
+        try {
+            const userRef = db.collection("users").doc(username);
+            const doc = await userRef.get();
+            if (doc.exists && doc.data().password === password) { loginSuccess(username); } 
+            else if (!doc.exists) {
+                await userRef.set({ username, password, friends: [] });
+                loginSuccess(username);
+            } else { alert("ভুল পাসওয়ার্ড!"); }
+        } catch (e) { alert("এরর: " + e.message); }
+    }
+
+    function loginSuccess(username) {
+        currentUser = username;
+        document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('appScreen').classList.remove('hidden');
+        loadFriends();
+        listenForIncomingCalls();
+        document.addEventListener('click', () => document.getElementById('contextMenu').style.display = 'none');
+    }
+
+    async function clearChatFromList(friendName, event) {
+        event.stopPropagation();
+        if (confirm(`আপনি কি নিশ্চিতভাবে "${friendName}" এর সমস্ত চ্যাট হিস্ট্রি ডিলিট করতে চান?`)) {
+            const chatId = [currentUser, friendName].sort().join('_');
+            try {
+                const messagesRef = db.collection("chats").doc(chatId).collection("messages");
+                const snapshot = await messagesRef.get();
+                const batch = db.batch();
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                alert("চ্যাট হিস্ট্রি ডিলিট করা হয়েছে!");
+                if(activeChatFriend === friendName) {
+                    document.getElementById('messageArea').innerHTML = '';
+                    document.getElementById('chatActions').classList.add('hidden');
+                    document.getElementById('currentChatUser').innerText = "কোনো বন্ধু সিলেক্ট করুন";
+                }
+            } catch (e) { alert("মুছে ফেলা সম্ভব হয়নি: " + e.message); }
+        }
+    }
+
+    function loadFriends() {
+        db.collection("users").doc(currentUser).onSnapshot((doc) => {
+            const list = document.getElementById('friendList');
+            list.innerHTML = '';
+            if(!doc.exists) return;
+            (doc.data().friends || []).forEach(friend => {
+                const li = document.createElement('li');
+                li.classList.add('friend-item');
+                if(activeChatFriend === friend) li.classList.add('active');
+                li.innerHTML = `
+                    <span style="flex:1;">🌸 ${friend}</span>
+                    <span class="list-delete-btn" onclick="clearChatFromList('${friend}', event)">🗑️</span>
+                `;
+                li.onclick = () => { 
+                    activeChatFriend = friend; 
+                    document.getElementById('currentChatUser').innerText = "চ্যাট উইথ: " + friend; 
+                    document.getElementById('chatActions').classList.remove('hidden');
+                    loadMessages(); 
+                };
+                list.appendChild(li);
+            });
+        });
+    }
+
+    // 📞 WebRTC + Firebase লাইভ কল ও কথা বলার সিস্টেম
+    async function makeCall(type) {
+        if(!activeChatFriend) return;
+        currentCallId = currentUser + "_" + Date.now();
+        
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'Video' });
+            document.getElementById('videoStreams').classList.remove('hidden');
+            document.getElementById('localVideo').srcObject = localStream;
+        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন পারমিশন দিন!"); return; }
+
+        showCallOverlay(activeChatFriend, `${type} Call - Ringing...`, false);
+        
+        // WebRTC Connection তৈরি
+        peerConnection = new RTCPeerConnection(rtcConfig);
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        remoteStream = new MediaStream();
+        document.getElementById('remoteVideo').srcObject = remoteStream;
+        peerConnection.ontrack = event => {
+            event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
         };
+
+        // ICE Candidate জেনারেট করা
+        const callDoc = db.collection("calls").doc(currentCallId);
+        const callerCandidatesCollection = callDoc.collection("callerCandidates");
+        peerConnection.onicecandidate = event => {
+            if(event.candidate) callerCandidatesCollection.add(event.candidate.toJSON());
+        };
+
+        // Offer তৈরি করা (SDP)
+        const offerDescription = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offerDescription);
+
+        await callDoc.set({
+            caller: currentUser,
+            receiver: activeChatFriend,
+            type: type,
+            status: "ringing",
+            offer: { type: offerDescription.type, sdp: offerDescription.sdp }
+        });
+
+        // Answer এর জন্য অপেক্ষা করা
+        callDoc.onSnapshot(snapshot => {
+            const data = snapshot.data();
+            if (data && data.answer && !peerConnection.currentRemoteDescription) {
+                const answerDescription = new RTCSessionDescription(data.answer);
+                peerConnection.setRemoteDescription(answerDescription);
+            }
+        });
+
+        // রিসিভারের ICE Candidates অ্যাড করা
+        callDoc.collection("receiverCandidates").onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const candidate = new RTCIiceCandidate(change.doc.data());
+                    peerConnection.addIceCandidate(candidate);
+                }
+            });
+        });
+
+        listenToCallStatus();
+    }
+
+    function listenForIncomingCalls() {
+        db.collection("calls")
+            .where("receiver", "==", currentUser)
+            .where("status", "==", "ringing")
+            .onSnapshot(snapshot => {
+                snapshot.forEach(doc => {
+                    if (currentCallId) return; // অলরেডি কথা বলতে থাকলে ইগনোর করবে
+                    const data = doc.data();
+                    currentCallId = doc.id;
+                    showCallOverlay(data.caller, `Incoming ${data.type} Call...`, true);
+                });
+            });
+    }
+
+    async function answerCall() {
+        const callDoc = db.collection("calls").doc(currentCallId);
+        const docSnapshot = await callDoc.get();
+        if(!docSnapshot.exists) return;
+        const data = docSnapshot.data();
+
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: data.type === 'Video' });
+            document.getElementById('videoStreams').classList.remove('hidden');
+            document.getElementById('localVideo').srcObject = localStream;
+        } catch (e) { alert("ক্যামেরা/মাইক্রোফোন চালু করা যায়নি!"); return; }
+
+        document.getElementById('callTypeStatus').innerText = "Connecting...";
+        document.getElementById('btnAcceptCall').classList.add('hidden');
+
+        peerConnection = new RTCPeerConnection(rtcConfig);
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        remoteStream = new MediaStream();
+        document.getElementById('remoteVideo').srcObject = remoteStream;
+        peerConnection.ontrack = event => {
+            event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+        };
+
+        // রিসিভারের ICE Candidate পাঠানো
+        const receiverCandidatesCollection = callDoc.collection("receiverCandidates");
+        peerConnection.onicecandidate = event => {
+            if(event.candidate) receiverCandidatesCollection.add(event.candidate.toJSON());
+        };
+
+        // কল অফার সেট করা
+        const offerDescription = data.offer;
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
+
+        // অ্যান্সার তৈরি করা
+        const answerDescription = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answerDescription);
+
+        await callDoc.update({
+            status: "accepted",
+            answer: { type: answerDescription.type, sdp: answerDescription.sdp }
+        });
+
+        // কলারের ICE Candidates রিড করা
+        callDoc.collection("callerCandidates").onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    peerConnection.addIceCandidate(new RTCIiceCandidate(change.doc.data()));
+                }
+            });
+        });
+
+        listenToCallStatus();
+    }
+
+    function listenToCallStatus() {
+        db.collection("calls").doc(currentCallId).onSnapshot(doc => {
+            if(!doc.exists) { cleanUpCallUI(); return; }
+            const data = doc.data();
+            if(data.status === "accepted") {
+                document.getElementById('callTypeStatus').innerText = "Call Connected & Speaking... 🎙️";
+            } else if(data.status === "ended") {
+                cleanUpCallUI();
+            }
+        });
+    }
+
+    async function hangUpCall() {
+        if(currentCallId) {
+            try {
+                await db.collection("calls").doc(currentCallId).update({ status: "ended" });
+                await db.collection("calls").doc(currentCallId).delete();
+            } catch(e){}
+        }
+        cleanUpCallUI();
+    }
+
+    function showCallOverlay(name, status, isIncoming) {
+        document.getElementById('callUserName').innerText = name;
+        document.getElementById('callTypeStatus').innerText = status;
+        document.getElementById('callAvatar').innerText = name.charAt(0).toUpperCase();
+        document.getElementById('callOverlay').classList.remove('hidden');
+        if(isIncoming) { document.getElementById('btnAcceptCall').classList.remove('hidden'); }
+    }
+
+    function cleanUpCallUI() {
+        document.getElementById('callOverlay').classList.add('hidden');
+        document.getElementById('btnAcceptCall').classList.add('hidden');
+        document.getElementById('videoStreams').classList.add('hidden');
         
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        if(peerConnection) { peerConnection.close(); peerConnection = null; }
+        if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+        if(remoteStream) { remoteStream.getTracks().forEach(track => track.stop()); remoteStream = null; }
+        currentCallId = null;
+    }
 
-        let myName = "অপরিচিত";
-        let myId = ""; 
-        let myFriendsList = []; // বন্ধুদের আইডি জমা রাখার অ্যারে
-
-        // ১. নাম এবং আইডি সেটআপ করে ইউজার রেজিস্ট্রি করা
-        function saveName() {
-            const nameInput = document.getElementById('userNameInput').value.trim();
-            if(nameInput !== "") {
-                myName = nameInput;
-                // প্রতিবার ব্রাউজার সেশনে একটি ইউনিক আইডি জেনারেট করার লজিক
-                myId = 'user_' + Math.random().toString(36).substr(2, 9);
-                
-                document.getElementById('namePopup').style.display = 'none';
-                document.getElementById('userDisplay').innerText = "ইউজার: " + myName;
-                
-                // ইউজারকে ডাটাবেজের 'users' কালেকশনে সেভ করা
-                db.collection("users").doc(myId).set({
-                    id: myId,
-                    name: myName
-                }).then(() => {
-                    // লোড করা শুরু করুন
-                    listenToFriendships();
-                    listenToUsers();
+    // মেসেজিং স্ক্রিপ্ট (অপরিবর্তিত)
+    function loadMessages() {
+        if (unsubscribeChat) unsubscribeChat();
+        const chatId = [currentUser, activeChatFriend].sort().join('_');
+        unsubscribeChat = db.collection("chats").doc(chatId).collection("messages").orderBy("timestamp", "asc")
+            .onSnapshot(snapshot => {
+                const area = document.getElementById('messageArea'); area.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data(); const msgId = doc.id;
+                    const wrapper = document.createElement('div'); wrapper.classList.add('message-wrapper');
+                    const container = document.createElement('div'); container.classList.add('message-container');
+                    const msgDiv = document.createElement('div'); msgDiv.classList.add('message', data.sender === currentUser ? 'outgoing' : 'incoming');
+                    container.style.justifyContent = data.sender === currentUser ? 'flex-end' : 'flex-start';
+                    msgDiv.innerHTML = `<div>${data.text}</div>`;
+                    const timeDiv = document.createElement('span'); timeDiv.classList.add('msg-time');
+                    timeDiv.innerText = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    timeDiv.style.alignSelf = data.sender === currentUser ? 'flex-end' : 'flex-start';
+                    container.appendChild(msgDiv); wrapper.appendChild(container); wrapper.appendChild(timeDiv); area.appendChild(wrapper);
                 });
-            } else {
-                alert("দয়া করে একটি নাম লিখুন!");
-            }
-        }
-
-        // ২. রিয়েল-টাইমে চেক করা আমার ফ্রেন্ড কে কে বা রিকোয়েস্ট স্ট্যাটাস কী
-        function listenToFriendships() {
-            db.collection("friendships")
-            .onSnapshot((snapshot) => {
-                myFriendsList = []; 
-                const requestDiv = document.getElementById('friendRequestsList');
-                requestDiv.innerHTML = '';
-
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    
-                    // যদি রিকোয়েস্ট অ্যাকসেপ্টেড হয়, তবে ফ্রেন্ড লিস্টে যুক্ত হবে
-                    if (data.status === 'accepted') {
-                        if (data.senderId === myId) myFriendsList.push(data.receiverId);
-                        if (data.receiverId === myId) myFriendsList.push(data.senderId);
-                    }
-                    
-                    // যদি কেউ আমাকে রিকোয়েস্ট পাঠায় এবং সেটি পেন্ডিং থাকে
-                    if (data.receiverId === myId && data.status === 'pending') {
-                        const reqItem = document.createElement('div');
-                        reqItem.classList.add('request-item');
-                        reqItem.innerHTML = `
-                            <span>${data.senderName}</span>
-                            <button class="btn-small btn-accept" onclick="acceptRequest('${doc.id}')">Accept</button>
-                        `;
-                        requestDiv.appendChild(reqItem);
-                    }
-                });
-
-                if(requestDiv.innerHTML === '') {
-                    requestDiv.innerHTML = '<div style="color:#777; font-size:13px;">কোনো রিকোয়েস্ট নেই</div>';
-                }
-
-                // ফ্রেন্ড লিস্ট আপডেট হওয়ার পর চ্যাট ও নিউজফিড রিলোড হবে
-                listenForMessages();
-                listenForPosts();
+                area.scrollTop = area.scrollHeight;
             });
-        }
+    }
 
-        // ৩. সমস্ত ইউজারদের তালিকা দেখানো যাতে রিকোয়েস্ট পাঠানো যায়
-        function listenToUsers() {
-            db.collection("users").onSnapshot((snapshot) => {
-                const userListDiv = document.getElementById('allUsersList');
-                userListDiv.innerHTML = '';
+    async function sendMessage() {
+        const input = document.getElementById('messageInput'); const text = input.value.trim();
+        if (!text || !activeChatFriend) return;
+        const chatId = [currentUser, activeChatFriend].sort().join('_');
+        const msgData = { sender: currentUser, text, timestamp: new Date().getTime() };
+        await db.collection("chats").doc(chatId).collection("messages").add(msgData);
+        input.value = '';
+    }
 
-                snapshot.forEach((doc) => {
-                    const user = doc.data();
-                    if (user.id === myId) return; // নিজেকে লিস্টে দেখাবে না
-
-                    const uItem = document.createElement('div');
-                    uItem.classList.add('user-item');
-                    uItem.innerHTML = `
-                        <span>👤 ${user.name}</span>
-                        <button class="btn-small btn-req" onclick="sendFriendRequest('${user.id}', '${user.name}')">Add Friend</button>
-                    `;
-                    userListDiv.appendChild(uItem);
-                });
-                if(userListDiv.innerHTML === '') {
-                    userListDiv.innerHTML = 'কোনো ইউজার নেই';
-                }
-            });
-        }
-
-        // ৪. ফ্রেন্ড রিকোয়েস্ট পাঠানো
-        function sendFriendRequest(targetUserId, targetUserName) {
-            const docId = myId < targetUserId ? `${myId}_${targetUserId}` : `${targetUserId}_${myId}`;
-            
-            db.collection("friendships").doc(docId).set({
-                senderId: myId,
-                senderName: myName,
-                receiverId: targetUserId,
-                receiverName: targetUserName,
-                status: 'pending' // রিকোয়েস্ট প্রাথমিকভাবে পেন্ডিং থাকবে
-            }).then(() => {
-                alert(targetUserName + "-কে ফ্রেন্ড রিকোয়েস্ট পাঠানো হয়েছে!");
-            });
-        }
-
-        // ৫. ফ্রেন্ড রিকোয়েস্ট অ্যাকসেপ্ট করা
-        function acceptRequest(docId) {
-            db.collection("friendships").doc(docId).update({
-                status: 'accepted'
-            }).then(() => {
-                alert("রিকোয়েস্ট অ্যাকসেপ্ট হয়েছে!");
-            });
-        }
-
-        // ৬. ডাটাবেসে নতুন মেসেজ পাঠানো
-        function sendMsg() {
-            const msgInput = document.getElementById('msgInput');
-            const msgText = msgInput.value.trim();
-            if (msgText === "") return;
-
-            db.collection("messages").add({
-                senderId: myId,
-                sender: myName,
-                text: msgText,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            msgInput.value = "";
-        }
-
-        // ৭. চ্যাট মেসেজ রিড করা (শুধুমাত্র নিজের এবং বন্ধুদের মেসেজ ফিল্টার করা হবে)
-        function listenForMessages() {
-            db.collection("messages").orderBy("timestamp", "asc")
-            .onSnapshot((snapshot) => {
-                const chatBox = document.getElementById('chatBox');
-                chatBox.innerHTML = ''; 
-
-                let hasMessages = false;
-
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if(!data.text) return;
-                    
-                    // সিকিউরিটি ফিল্টার: মেসেজ দাতা যদি আমি নিজে হই অথবা আমার ফ্রেন্ড লিস্টের কেউ হয় তবেই শো করবে
-                    if (data.senderId === myId || myFriendsList.includes(data.senderId)) {
-                        hasMessages = true;
-                        const newMsg = document.createElement('div');
-                        newMsg.classList.add('message');
-                        
-                        if(data.senderId === myId) {
-                            newMsg.classList.add('my-message');
-                            newMsg.innerText = data.text;
-                        } else {
-                            newMsg.innerHTML = `<span style="font-size:10px; color:#555; display:block; font-weight:bold;">${data.sender || 'অপরিচিত'}</span>${data.text}`;
-                        }
-                        chatBox.appendChild(newMsg);
-                    }
-                });
-
-                if(!hasMessages) {
-                    chatBox.innerHTML = '<p style="text-align: center; color: #aaadba; font-size: 13px; margin-top: 20px;">কোনো চ্যাট উপলব্ধ নেই। বন্ধুদের মেসেজ এখানে আসবে।</p>';
-                }
-                chatBox.scrollTop = chatBox.scrollHeight; 
-            });
-        }
-
-        // ৮. নতুন পোস্ট তৈরি করা
-        function createNewPost() {
-            const postTextArea = document.getElementById('postText');
-            const postText = postTextArea.value.trim();
-            if (postText === "") {
-                alert("পোস্টে কিছু লিখুন!");
-                return;
-            }
-
-            db.collection("posts").add({
-                authorId: myId,
-                author: myName,
-                content: postText,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            postTextArea.value = "";
-        }
-
-        // ৯. নিউজফিড পোস্ট রিড করা (শুধুমাত্র নিজের এবং বন্ধুদের পোস্ট ফিল্টার করা হবে)
-        function listenForPosts() {
-            db.collection("posts").orderBy("timestamp", "desc")
-            .onSnapshot((snapshot) => {
-                const feed = document.getElementById('newsFeed');
-                feed.innerHTML = ''; 
-
-                let hasPosts = false;
-
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if(!data.content) return;
-
-                    // সিকিউরিটি ফিল্টার: পোস্ট দাতা যদি আমি নিজে হই অথবা আমার ফ্রেন্ড লিস্টের কেউ হয় তবেই শো করবে
-                    if (data.authorId === myId || myFriendsList.includes(data.authorId)) {
-                        hasPosts = true;
-                        const newPost = document.createElement('div');
-                        newPost.classList.add('post-item');
-                        newPost.innerHTML = `<strong>👤 ${data.author || 'অপরিচিত'}</strong><p style="margin-top:8px; white-space: pre-wrap;">${data.content}</p>`;
-                        feed.appendChild(newPost);
-                    }
-                });
-
-                if(!hasPosts) {
-                    feed.innerHTML = '<p style="text-align: center; color: #777; margin-top: 20px;">কোনো পোস্ট নেই। আপনি পোস্ট করলে বা কোনো ফ্রেন্ড পোস্ট করলেই কেবল এখানে দেখা যাবে।</p>';
-                }
-            });
-        }
-
-        function checkEnter(event) {
-            if (event.key === 'Enter') sendMsg();
-        }
-    </script>
+    async function addFriend() { const f = document.getElementById('friendUsername').value.trim().toLowerCase(); if(!f || f === currentUser) return; await db.collection("users").doc(currentUser).update({ friends: firebase.firestore.FieldValue.arrayUnion(f) }); await db.collection("users").doc(f).update({ friends: firebase.firestore.FieldValue.arrayUnion(currentUser) }); alert("যুক্ত হয়েছে!"); document.getElementById('friendUsername').value = ''; }
+    document.getElementById('messageInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+</script>
 </body>
 </html>
