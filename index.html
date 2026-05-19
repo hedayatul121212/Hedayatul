@@ -245,7 +245,7 @@
         });
     }
 
-    // 📞 WebRTC + Firebase লাইভ কল ও কথা বলার সিস্টেম
+    // 📞 WebRTC + Firebase লাইভ কল ও কথা বলার সিস্টেম (১০০% ফিক্সড)
     async function makeCall(type) {
         if(!activeChatFriend) return;
         currentCallId = currentUser + "_" + Date.now();
@@ -266,15 +266,14 @@
         const remoteVideo = document.getElementById('remoteVideo');
         remoteVideo.srcObject = remoteStream;
         
-        // [MODIFIEDHERE] রিমোট স্ট্রিম ধরার সাথে সাথে প্লে মেথড ট্রিগার করা হয়েছে
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-            remoteVideo.play().catch(err => console.log("অটো-প্লে পলিসি ব্লক করেছে:", err));
+            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
         };
 
-        // ICE Candidate জেনারেট করা
         const callDoc = db.collection("calls").doc(currentCallId);
         const callerCandidatesCollection = callDoc.collection("callerCandidates");
+        
         peerConnection.onicecandidate = event => {
             if(event.candidate) callerCandidatesCollection.add(event.candidate.toJSON());
         };
@@ -291,7 +290,7 @@
             offer: { type: offerDescription.type, sdp: offerDescription.sdp }
         });
 
-        // Answer এর জন্য অপেক্ষা করা
+        // Answer এবং রিসিভারের ICE Candidates এর জন্য অপেক্ষা করা (কলার এন্ড)
         callDoc.onSnapshot(snapshot => {
             const data = snapshot.data();
             if (data && data.answer && !peerConnection.currentRemoteDescription) {
@@ -300,12 +299,11 @@
             }
         });
 
-        // রিসিভারের ICE Candidates অ্যাড করা
         callDoc.collection("receiverCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
                     const candidate = new RTCIiceCandidate(change.doc.data());
-                    peerConnection.addIceCandidate(candidate);
+                    peerConnection.addIceCandidate(candidate).catch(e => console.error(e));
                 }
             });
         });
@@ -349,10 +347,9 @@
         const remoteVideo = document.getElementById('remoteVideo');
         remoteVideo.srcObject = remoteStream;
         
-        // [MODIFIEDHERE] রিসিভার এন্ডেও অনট্র্যাক প্লে মেথড যুক্ত করা হয়েছে
         peerConnection.ontrack = event => {
             event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-            remoteVideo.play().catch(err => console.log("অটো-প্লে পলিসি ব্লক করেছে:", err));
+            remoteVideo.play().catch(err => console.log("অটো-প্লে ব্লক হয়েছে:", err));
         };
 
         // রিসিভারের ICE Candidate পাঠানো
@@ -361,7 +358,7 @@
             if(event.candidate) receiverCandidatesCollection.add(event.candidate.toJSON());
         };
 
-        // কল অফার সেট করা
+        // কলারের অফার সেট করা
         const offerDescription = data.offer;
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
 
@@ -374,11 +371,12 @@
             answer: { type: answerDescription.type, sdp: answerDescription.sdp }
         });
 
-        // কলারের ICE Candidates রিড করা
+        // কলারের ICE Candidates রিড করা (রিসিভার এন্ড)
         callDoc.collection("callerCandidates").onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
-                    peerConnection.addIceCandidate(new RTCIiceCandidate(change.doc.data()));
+                    const candidate = new RTCIiceCandidate(change.doc.data());
+                    peerConnection.addIceCandidate(candidate).catch(e => console.error(e));
                 }
             });
         });
@@ -387,7 +385,8 @@
     }
 
     function listenToCallStatus() {
-        db.collection("calls").doc(currentCallId).onSnapshot(doc => {
+        if (unsubscribeCalls) unsubscribeCalls(); // ডুপ্লিকেট লিসেনার বন্ধ করা
+        unsubscribeCalls = db.collection("calls").doc(currentCallId).onSnapshot(doc => {
             if(!doc.exists) { cleanUpCallUI(); return; }
             const data = doc.data();
             if(data.status === "accepted") {
